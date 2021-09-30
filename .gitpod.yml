@@ -1,0 +1,17 @@
+tasks:
+  - name: install google-cloud-sdk
+    init: |
+      curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-358.0.0-linux-x86_64.tar.gz
+      tar -xvf google-cloud-sdk-358.0.0-linux-x86_64.tar.gz
+      ./google-cloud-sdk/install.sh
+      rm google-cloud-sdk-358.0.0-linux-x86_64.tar.gz
+      gp sync-done gc-sdk
+    
+  - name: gcloud setting etc.
+    init: |
+      gp sync-await gc-sdk
+      gcloud auth application-default login
+      pip install google-cloud-bigquery
+      pip install pandas, pyarrow
+    openMode: split-right
+  
