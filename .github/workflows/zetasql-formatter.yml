@@ -2,7 +2,7 @@ name: ZetaSQL Formatter
 on:
   push:
     branches:
-      - master
+      - main
 
 jobs:
   format:
