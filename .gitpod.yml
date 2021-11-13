@@ -1,5 +1,5 @@
 tasks:
-  - name: install google-cloud-sdk
+  - name: install google-cloud-sdk & gcloud configs
     init: |
       curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-358.0.0-linux-x86_64.tar.gz
       tar -xvf google-cloud-sdk-358.0.0-linux-x86_64.tar.gz
@@ -8,14 +8,9 @@ tasks:
       pip install google-cloud-bigquery
       pip install pandas
       pip install pyarrow
-      gp sync-done gc-sdk
-    
-  - name: gcloud setting etc.
-    init: >
-      gp sync-await gc-sdk
+      source ~/.bashrc
       gcloud auth login
       read -p "Enter Your GCP Project ID: " GCP_ID
       gcloud config set project $GCP_ID
       gcloud auth application-default login
-    openMode: split-right
   
