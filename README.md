@@ -16,3 +16,6 @@
      zetasql-formatter.ymlを設置する方式にした。
      以下を使う手もある
      https://github.com/yoheikikuta/sql-autoformat-action
+     
+### autopep8 linter : GitHub Action
+     https://github.com/marketplace/actions/autopep8#automated-pull-requests
