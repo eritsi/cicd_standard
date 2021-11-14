@@ -2,9 +2,9 @@
 on:
   push:
     branches:
-      - master
+      - main
 
-name: 'Trigger: Push action'
+name: 'Shellscript Formatter'
 
 jobs:
   shellcheck:
