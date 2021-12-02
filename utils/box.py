@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from boxsdk import OAuth2, Client
 import pandas as pd
 
@@ -26,6 +27,6 @@ def read_folder(_client, _folder_id):
 def read_file(_client, _file_id, _header, _sheet_name):
     
     download_url = _client.file(_file_id).get_download_url()
-    _excel_data = pd.read_excel(download_url, _header, _sheet_name)
+    _excel_data = pd.read_excel(download_url, header = _header, sheet_name = _sheet_name)
     
     return _excel_data
