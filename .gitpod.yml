@@ -13,14 +13,15 @@ tasks:
       read -p "Enter Your GCP Project ID: " GCP_ID
       gcloud config set project $GCP_ID
       gcloud auth application-default login
-      jupyter notebook --generate-config
-      echo -e '\nc.NotebookApp.contents_manager_class = "jupytext.TextFileContentsManager"' >> ~/.jupyter/jupyter_notebook_config.py
-      echo -e '\nc.ContentsManager.default_jupytext_formats = "ipynb,py"' >> ~/.jupyter/jupyter_notebook_config.py
-      jupyter notebook --ip=*
       gp sync-done gc-sdk
   - name: new shell
     init: |
       gp sync-await gc-sdk
+      pip install -r requirements.txt 
+      jupyter notebook --generate-config
+      echo -e '\nc.NotebookApp.contents_manager_class = "jupytext.TextFileContentsManager"' >> ~/.jupyter/jupyter_notebook_config.py
+      echo -e '\nc.ContentsManager.default_jupytext_formats = "ipynb,py"' >> ~/.jupyter/jupyter_notebook_config.py
+      jupyter notebook --ip=*
     openMode: split-right
 vscode:
   extensions:

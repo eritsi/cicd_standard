@@ -1,0 +1,13 @@
+jupytext
+matplotlib
+openpyxl
+optuna
+pandas
+pandas_gbq
+plotly
+pyarrow
+seaborn
+scikit-learn
+scipy
+
+numpy
