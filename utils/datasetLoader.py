@@ -8,25 +8,28 @@ from google.cloud import bigquery_storage_v1beta1
 '''
 BQデータテーブル読み込み書き込み処理プログラム
 '''
-class datasetLoader( object ):
+
+
+class datasetLoader(object):
 
     # GCPの設定を行う
-    def __init__( self ):    
+    def __init__(self):
         self.project = os.environ["GCLOUD_PROJECT"]
-        self.bqclient = bigquery.Client(project=self.project, location="asia-northeast1")
+        self.bqclient = bigquery.Client(
+            project=self.project, location="asia-northeast1")
         self.bqstorageclient = bigquery_storage_v1beta1.BigQueryStorageClient()
         return
 
     # ファイルパスから全文を読む
-    def __filePathToLines( self, in_FilePath ):
+    def __filePathToLines(self, in_FilePath):
         lines = None
-        with open( in_FilePath, "r" ) as _handle:
+        with open(in_FilePath, "r") as _handle:
             lines = _handle.read()
             _handle.close()
         return lines
 
     # SQLを実行し、データフレームへ入れる
-    def __sqlToDataframe( self, in_Lines ):
+    def __sqlToDataframe(self, in_Lines):
 
         # read bq table through bqstorage_client
         df = (
@@ -37,14 +40,14 @@ class datasetLoader( object ):
             )
         )
         return df
-    
+
     # データ読み込み処理
-    def load_by_file( self, in_FilePath ):
+    def load_by_file(self, in_FilePath):
         """SQLファイルを実行し、dfに入れる
         Parameters
         ----------
         in_FilePath : ファイルパス
-        
+
         Returns
         -------
         df : pandasのdataframeが返る
@@ -55,22 +58,22 @@ class datasetLoader( object ):
         >>> df = dataset_loader.load_by_file( "./test.sql" )
         """
         whole_dataset = []
-        lines = self.__filePathToLines( in_FilePath )
-        whole_dataset  = self.__sqlToDataframe( lines )
+        lines = self.__filePathToLines(in_FilePath)
+        whole_dataset = self.__sqlToDataframe(lines)
 
         return whole_dataset
 
     # データ読み込み処理
-    def load( self, lines ):
+    def load(self, lines):
         """SQLを実行し、dfに入れる
         Parameters
         ----------
         lines : SQL文
-        
+
         Returns
         -------
         df : pandasのdataframeが返る
-        
+
         Examples
         --------
         >>> import datasetLoader
@@ -84,26 +87,29 @@ class datasetLoader( object ):
         >>> df = dataset_loader.load( sql )
         """
         whole_dataset = []
-        whole_dataset  = self.__sqlToDataframe( lines )
+        whole_dataset = self.__sqlToDataframe(lines)
 
-        return whole_dataset   
+        return whole_dataset
 
     # データフレーム書き込み処理
-    def write_to_BQ( self, df, table_name, if_exists="append"):
+    def write_to_BQ(self, df, table_name, if_exists="append"):
         """ pandasのdataframeをBQへテーブルとして書き込む
         Parameters
         ----------
         table_name : "dataset.table"
         if_exists  : "append"(default) or "replace"
-        
+
         Returns
         -------
-        
-        
+
+
         Examples
         --------
         >>> import datasetLoader
         >>> dataset_loader = datasetLoader()
         >>> df = dataset_loader.write_to_BQ( df, "dataset.table", "replace" )
         """
-        df.to_gbq(destination_table=table_name, project_id=self.project, if_exists=if_exists)
+        df.to_gbq(
+            destination_table=table_name,
+            project_id=self.project,
+            if_exists=if_exists)
