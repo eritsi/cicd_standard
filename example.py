@@ -15,9 +15,9 @@
 
 # ! pip install boxsdk
 
-import box
 import sys
 sys.path.append('./utils/')
+import box
 
 project_id = ''
 dataset_id = ''
