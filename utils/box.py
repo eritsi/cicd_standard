@@ -25,8 +25,16 @@ def read_folder(_client, _folder_id):
         print('{0} {1} is named "{2}"'.format(item.type.capitalize(), item.id, item.name))
 
 def read_file(_client, _file_id, _header, _sheet_name):
+    file_info = _client.file(_file_id).get()
+    print('Loading file "{0}" with a size of {1} bytes'.format(file_info.name, file_info.size))
     
     download_url = _client.file(_file_id).get_download_url()
     _excel_data = pd.read_excel(download_url, header = _header, sheet_name = _sheet_name)
     
     return _excel_data
+
+
+def get_filename(_client, _file_id):
+    file_info = _client.file(_file_id).get()
+    
+    return file_info.name
