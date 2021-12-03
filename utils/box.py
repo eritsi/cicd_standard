@@ -17,7 +17,7 @@ def GetClientObject(_AccessToken, _client_id, _client_secret):
     
     return client
 
-def read_folder(_client, _folder_id):
+def list_folder(_client, _folder_id):
     items = _client.folder(_folder_id).get_items()
     _file_ids = []
     for item in items:
@@ -26,10 +26,10 @@ def read_folder(_client, _folder_id):
 
 def read_file(_client, _file_id, _header, _sheet_name):
     file_info = _client.file(_file_id).get()
-    print('Loading file "{0}" with a size of {1} bytes'.format(file_info.name, file_info.size))
+    print('Loading file "{0}" from box with a size of {1} bytes'.format(file_info.name, file_info.size))
     
     download_url = _client.file(_file_id).get_download_url()
-    _excel_data = pd.read_excel(download_url, header = _header, sheet_name = _sheet_name)
+    _excel_data = pd.read_excel(download_url, header = _header, sheet_name = _sheet_name, dtype=str)
     
     return _excel_data
 
