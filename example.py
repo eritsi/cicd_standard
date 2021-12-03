@@ -21,7 +21,7 @@ import box
 
 project_id = ''
 dataset_id = ''
-AccessToken = ''
+AccessToken = '' 
 client_id = ''
 client_secret = ''
 
@@ -61,6 +61,40 @@ eng_cols = [
     'kW',
     'category',
     'category_name']
+
+eng_cols_2020 = [
+    'client_year',
+    'month',
+    'company_code',
+    'plant_code',
+    'space_code',
+    'tana_code',
+    'MTyp',
+    'account_code',
+    'layer_code',
+    'product',
+    'product_name',
+    'WBS',
+    'supplier_code',
+    'unit',
+    'ABC',
+    'purchase_code',
+    'company_name',
+    'plant',
+    'storage',
+    'Mtyp_name',
+    'product_type',
+    'supplier_name',
+    'purchase_name',
+    'kW',
+    'category',
+    'category_name',
+    'cost',
+    'stock_count',
+    'stock_price',
+    'cost_next_term',
+    'stock_price_next_term'
+]
 
 
 def read_folder_2014(_client, _folder_id, _project_id, _dataset_id, eng_cols):
@@ -139,7 +173,7 @@ read_folder_2015(
     '149894337466',
     project_id,
     dataset_id,
-    eng_cols)  # 2020年度は2015年度と同じフォーマットで全月ok
+    eng_cols_2020)  # 2020年度は2015年度と同じフォーマットだがカラム順が異なる全月ok
 
 read_folder_2015(
     client,
