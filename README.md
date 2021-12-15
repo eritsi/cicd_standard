@@ -1,5 +1,12 @@
 # cicd_standard
 起点リポジトリ。 これをimport repositoryして使い捨てる
+具体的には
+```
+git remote -v
+rm -rf .git
+git init
+git remote add origin {New Repository}
+```
 
 ## Activate github actions in the new repository
 - Settings -> Actions -> Allow all actions
