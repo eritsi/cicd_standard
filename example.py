@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.13.2
+#       jupytext_version: 1.13.6
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -214,3 +214,66 @@ read_folder_201406(
     project_id,
     dataset_id,
     eng_cols)  # 2014年度は6月からフォーマットが変わるので対処が必要
+
+# ## 追加情報
+
+box.list_folder(client, '155499720630')  # 2020年度
+
+uke_cols = [
+    'product',
+    'product_name',
+    'wbs',
+    'plnt',
+    'storage',
+    'transfer_type_name',
+    'spt',
+    'inout_denpyo_id',
+    'denpyo_category',
+    'registered_date',
+    'item_count',
+    'unit',
+    'currency',
+    'drawing_code'    
+]
+
+
+def read_folder_uke_2019(_client, _folder_id, _project_id, _dataset_id, eng_cols):
+    items = _client.folder(_folder_id).get_items()
+    _file_ids = []
+    for item in items:
+        _file_ids.append(item.id)
+        data = box.read_file(_client, item.id, 1, [0])
+        if item.id in ['914586340883', '914588483800', '914587710299']:
+            table_name = _dataset_id + ".ukeharai_" + \
+                box.get_filename(_client, item.id)[0:4] + "0" + box.get_filename(_client, item.id)[5:6] + "01"
+        else:
+            data = box.read_file(_client, item.id, 1, [0])
+            table_name = _dataset_id + ".ukeharai_" + \
+                box.get_filename(_client, item.id)[3:11]
+        print(table_name)
+        data[0].iloc[:, 1:].set_axis(eng_cols, axis=1).to_gbq(
+            destination_table=table_name, project_id=_project_id, if_exists='replace')
+        print('{0} {1} is loaded to BQ as "{2}"'.format(
+            item.type.capitalize(), item.id, table_name))
+
+
+read_folder_uke_2019(
+    client,
+    '155498623987',
+    project_id,
+    dataset_id,
+    uke_cols)
+
+read_folder_uke_2019( # 2020年度は全部四半期ごとのファイル
+    client,
+    '155499720630',
+    project_id,
+    dataset_id,
+    uke_cols)
+
+read_folder_uke_2019( # 2021年度は全部四半期ごとのファイル
+    client,
+    '155426576781',
+    project_id,
+    dataset_id,
+    uke_cols)

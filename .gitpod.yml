@@ -14,6 +14,10 @@ tasks:
       gcloud config set project $GCP_ID
       gcloud auth application-default login
       gp sync-done gc-sdk
+    command: |
+      date -d "2020/1/1 1:23" +%s
+      # bq cp --project_id=<prj> --location='asia-northeast1' <dataset>.<table>@1585767600000
+      # bq show --project_id=<prj> --schema --format=prettyjson <dataset>.<table> > schema.json
   - name: new shell
     init: |
       gp sync-await gc-sdk
