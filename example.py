@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.13.6
+#       jupytext_version: 1.13.7
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -225,7 +225,8 @@ uke_cols = [
     'wbs',
     'plnt',
     'storage',
-    'transfer_type_name',
+    'transfer_type_code',
+    'transfer_type',
     'spt',
     'inout_denpyo_id',
     'denpyo_category',
@@ -242,16 +243,15 @@ def read_folder_uke_2019(_client, _folder_id, _project_id, _dataset_id, eng_cols
     _file_ids = []
     for item in items:
         _file_ids.append(item.id)
-        data = box.read_file(_client, item.id, 1, [0])
+        data = box.read_file(_client, item.id, 0, [0])
         if item.id in ['914586340883', '914588483800', '914587710299']:
             table_name = _dataset_id + ".ukeharai_" + \
                 box.get_filename(_client, item.id)[0:4] + "0" + box.get_filename(_client, item.id)[5:6] + "01"
         else:
-            data = box.read_file(_client, item.id, 1, [0])
             table_name = _dataset_id + ".ukeharai_" + \
                 box.get_filename(_client, item.id)[3:11]
         print(table_name)
-        data[0].iloc[:, 1:].set_axis(eng_cols, axis=1).to_gbq(
+        data[0].set_axis(eng_cols, axis=1).to_gbq(
             destination_table=table_name, project_id=_project_id, if_exists='replace')
         print('{0} {1} is loaded to BQ as "{2}"'.format(
             item.type.capitalize(), item.id, table_name))
