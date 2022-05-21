@@ -21,7 +21,10 @@ tasks:
   - name: new shell
     init: |
       gp sync-await gc-sdk
-      pip install -r requirements.txt 
+      pip install -r requirements.txt
+      # MeCab 
+      sudo apt-get install libmecab2 libmecab-dev mecab mecab-ipadic mecab-ipadic-utf8 mecab-utils
+      
       jupyter notebook --generate-config
       echo -e '\nc.NotebookApp.contents_manager_class = "jupytext.TextFileContentsManager"' >> ~/.jupyter/jupyter_notebook_config.py
       echo -e '\nc.ContentsManager.default_jupytext_formats = "ipynb,py"' >> ~/.jupyter/jupyter_notebook_config.py
