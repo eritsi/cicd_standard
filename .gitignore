@@ -2,3 +2,4 @@ google-cloud-sdk
 .ipynb_checkpoints
 *.ipynb
 utils/__pycache__
+BNN/data
