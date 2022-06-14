@@ -12,14 +12,12 @@
 #     name: python3
 # ---
 
-# ! pip install chainer==1.24.0
+# ! pip install tensorflow
 
 from sklearn.preprocessing import StandardScaler
 import numpy as np
 import os
 import matplotlib.pyplot as plt
-from chainer import Chain, Variable, optimizers
-from chainer.optimizer import WeightDecay
 
 
 # ## get data
@@ -98,99 +96,68 @@ plt.scatter(x_train, y_train)
 
 # ## Linear Deep Learning via Chainer
 
-import chainer.functions as F
-import chainer.links as L
-class BNN(Chain):
-    """
-    ベイジアンニューラルネットの重み学習を行うクラス
-    """
+from tensorflow import keras
+from tensorflow.keras.layers import Dense, Activation, Dropout, GaussianDropout
+from tensorflow.keras.initializers import RandomNormal
 
-    def __init__(self, input_dim, output_dim,
-                 hidden_dim=512, activate="relu", mask_type="gaussian", prob=.5, lengthscale=10.):
-        """
-        :param int input_dim: 入力層の次元数
-        :param int output_dim: 出力層の次元数
-        :param int hidden_dim: 隠れ層の次元数
-        :param str activate: 活性化関数
-        :param str mask_type: 
-            変数へのマスクの種類を表すstring. 
-            "dropout", "gaussian", Noneのいずれかを指定
-        :param float prob: 
-            dropoutの確率を表すfloat. 
-            0.のときdropoutをしないときに一致します. 
-            [0, 1) の小数
-        :param float lengthscale:
-            初期のネットワーク重みの精度パラメータ. 大きい値になるほど0に近い値を取ります. 
-        """
+
+# +
+class BNN(keras.Model):
+    def __init__(self, 
+                 input_dim: int, 
+                 output_dim: int, 
+                 hidden_dim: int, 
+                 activate: str = 'relu', 
+                 mask_type: str='gaussian', 
+                 prob: float=0.5, 
+                 lengthscale: float=10.):
+        super(BNN, self).__init__(name='bnn')
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.hidden_dim = hidden_dim
-        self.activate_name = activate
-        self.activate = self._get_function(activate)
+        self.activation = activate
         self.mask_type = mask_type
+        self.prob = prob
         self.lengthscale = lengthscale
-
-        super().__init__(
-            l1=L.Linear(input_dim, hidden_dim,
-                        initial_bias=np.random.normal(scale=1. / lengthscale, size=(hidden_dim)),
-                        initialW=np.random.normal(scale=1. / lengthscale, size=(hidden_dim, input_dim))),
-            l2=L.Linear(hidden_dim, hidden_dim,
-                        initial_bias=np.random.normal(scale=1. / lengthscale, size=(hidden_dim)),
-                        initialW=np.random.normal(scale=1. / lengthscale, size=(hidden_dim, hidden_dim))),
-            l3=L.Linear(hidden_dim, hidden_dim,
-                        initial_bias=np.random.normal(scale=1. / lengthscale, size=(hidden_dim)),
-                        initialW=np.random.normal(scale=1. / lengthscale, size=(hidden_dim, hidden_dim))),
-            l4=L.Linear(hidden_dim, output_dim,
-                        initial_bias=np.random.normal(scale=1. / lengthscale, size=(output_dim)),
-                        initialW=np.random.normal(scale=1. / lengthscale, size=(output_dim, output_dim)))
-        )
-
-        self.mask = Mask(name=mask_type, prob=prob)
-
-    def _get_function(self, s):
-        """
-        文字列からそれに対応する関数を取得
+        self.dense_1 = Dense(input_dim, 
+                             activation=activate, 
+                             bias_initializer=RandomNormal(mean=1/lengthscale, stddev=1),
+                             kernel_initializer=RandomNormal(mean=1/lengthscale, stddev=1)
+                             )
+        self.dense_2 = Dense(hidden_dim, 
+                             activation=activate, 
+                             bias_initializer=RandomNormal(mean=1/lengthscale, stddev=1),
+                             kernel_initializer=RandomNormal(mean=1/lengthscale, stddev=1)
+                             )
+        self.dense_3 = Dense(hidden_dim, 
+                             activation=activate, 
+                             bias_initializer=RandomNormal(mean=1/lengthscale, stddev=1),
+                             kernel_initializer=RandomNormal(mean=1/lengthscale, stddev=1)
+                             )
+        self.dense_4 = Dense(output_dim, 
+                             bias_initializer=RandomNormal(mean=1/lengthscale, stddev=1),
+                             kernel_initializer=RandomNormal(mean=1/lengthscale, stddev=1)
+                             )
+        self.mask_1 = eval(mask_type)(prob)
+        self.mask_2 = eval(mask_type)(prob)
+        self.mask_3 = eval(mask_type)(prob)
+    
+    def __call__(self, inputs, apply_input=False, apply_hidden=True, training=False):
+        if apply_input:
+            inputs = self.mask_1(inputs, training=apply_input)
+        x = self.dense_1(inputs)
         
-        :param str s: 関数を表す文字列
-        :return: 
-        """
-        if s == "relu":
-            f = F.relu
-        elif s == "sigmoid":
-            f = F.sigmoid
-        elif s == "tanh":
-            f = F.tanh
-        else:
-            print("対応する関数が見つかりません")
-            f = lambda x: x
-        return f
-
-    def __call__(self, x, apply_input=False, apply_hidden=True):
-        """
-        ネットワークの出力を作成
+        if apply_hidden:
+            x = self.mask_2(x, training=apply_hidden)
+        x = self.dense_2(x)
         
-        :param Variable x: 入力ベクトル
-        :param bool apply_hidden: 
-            隠れ層に対してマスクをかけるかのフラグ. 
-            True のときm `mask` によって生成されたマスクを隠れ層に掛ける
-        :param bool apply_input:
-            入力層に対してマスクをかけるかのフラグ. 
-            True にすると学習が不安定になることが観測されているため, 学習時には False が推奨
-        :return: 出力
-        :rtype: Variable
-        """
-        x1 = self.mask.apply(x, apply_input)
-        h1 = self.activate(self.l1(x1))
-
-        h1 = self.mask.apply(h1, apply_hidden)
-        h2 = self.activate(self.l2(h1))
-
-        h2 = self.mask.apply(h2, apply_hidden)
-        h3 = self.activate(self.l3(h2))
-
-        h3 = self.mask.apply(h3, apply_hidden)
-        h4 = self.l4(h3)
-        return h4
+        if apply_hidden:
+            x = self.mask_3(x, training=apply_hidden)
+        x = self.dense_3(x)
+        
+        x = self.dense_4(x)
+        
+        return x        
 
     def __str__(self):
         """
@@ -198,76 +165,35 @@ class BNN(Chain):
         :return: ネットワーク条件の文字
         :rtype: str
         """
-        s = "hidden={0.hidden_dim}_activate={0.activate_name}_{0.mask}".format(self)
+        s = "hidden={0.hidden_dim}_activate={0.activation}_{0.mask_type}".format(self)
         return s
 
+def get_batch(x, y, batch_size, shuffle=False):
+    '''ミニバッチを生成するジェネレーター関数
+    '''
+    num_samples = len(x)  # サンプル数
+    if shuffle:  # シャッフルする場合
+        indices = np.random.permutation(num_samples)
+        # 例: num_samples=10 の場合、array([7, 8, 1, 2, 4, 6, 9, 5, 3, 0])
+        # ランダムにシャッフルされている
+    else:  # シャッフルしない場合
+        indices = np.arange(num_samples)
+        # 例: num_samples=10 の場合、array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+        
+    num_steps = np.ceil(num_samples / batch_size).astype(int)
+    # ステップ数 = ceil(サンプル数 / バッチサイズ)
+    # 例 np.ceil(10 / 3) = np.ceil(3.33333333...) = 4
+    
+    for itr in range(num_steps):
+        start = batch_size * itr
+        excerpt = indices[start:start + batch_size]
+        # [batch_size * itr, batch_size * (itr + 1)] の範囲のサンプルを yield で返す。
+        yield x[excerpt], y[excerpt]
+
+
+# -
 
 # ## Bayes Part
-
-class Mask(object):
-    """
-    入力変数に数値を掛けて摂動を与える関数クラス
-    """
-
-    def __init__(self, name="dropout", prob=.5):
-        """
-        :param str name: マスクに用いる手法の名前. "dropout", "gaussian", None のいずれかを指定
-        :param float prob: マスクの確率
-        """
-
-        self.prob = self._check_prob(prob)
-        self.name = name
-        if name == "dropout":
-            self.mask_generator = self._dropout_mask
-        elif name == "gaussian":
-            self.mask_generator = self._gaussian_mask
-        elif name is None or name.lower() == "none":
-            self.mask_generator = self._none_mask
-        else:
-            raise NameError("name: {name} に該当するmask関数が見当たりません. ".format(**locals()))
-
-    def __repr__(self):
-        s = "maskname={0.name}_prob={0.prob}".format(self)
-        return s
-
-    def _check_prob(self, prob):
-        if prob >= 1.:
-            prob = 1.
-        elif prob < 0:
-            prob = 0
-        return prob
-
-    def _dropout_mask(self, size):
-        z = np.random.binomial(1, self.prob, size=size).astype(np.float32) * self.prob ** -1
-        return z
-
-    def _gaussian_mask(self, size):
-        sigma = self.prob / (1. - self.prob)
-        z = np.random.normal(loc=1., scale=sigma, size=size).astype(np.float32)
-        return z
-
-    def _none_mask(self, size):
-        return np.array([1.] * size).astype(np.float32)
-
-    def _make(self, size):
-        z = self.mask_generator(size)
-        return Variable(np.diag(z))
-
-    def apply(self, h, do_mask=True):
-        """
-        ベクトルにマスクを掛ける関数
-        :param Variable h: マスクされる変数
-        :return: masked variable
-        :rtype: Variable
-        """
-        if do_mask is False:
-            return h
-
-        size = h.shape[1]
-        z = self._make(size)
-        z = F.matmul(h, z)
-        return z
-
 
 class Transformer(object):
     """
@@ -410,7 +336,7 @@ def plot_posterior(x_test, x_train=None, y_train=None, n_samples=100):
 
     predict_mean = predict_values.mean(axis=0)
     predict_var = predict_values.var(axis=0)
-    tau = (1. - model.mask.prob) * model.lengthscale ** 2. / (2 * len(x_train) * weight_decay)
+    tau = (1. - model.prob) * model.lengthscale ** 2. / (2 * len(x_train) * weight_decay)
     predict_var += tau ** -1
 
     fig = plt.figure(figsize=(6, 6))
@@ -442,8 +368,7 @@ def posterior(x, n=3):
     """
     x = preprocess_array_format(x)
     x = preprocess(x)
-    x = Variable(x)
-    pred = [model(x, apply_input=False, apply_hidden=True).data.reshape(-1) for _ in range(n)]
+    pred = [model(x, False, True).numpy().reshape(-1) for _ in range(n)]
     pred = inverse_y_transform(pred)
     pred = np.array(pred)
     return pred
@@ -453,15 +378,20 @@ def posterior(x, n=3):
 
 weight_decay = 4 * 10 ** -5
 apply_input = False
-n_epoch=1000
+n_epoch=10000
 batch_size=20
 freq_print_loss=10
 freq_plot=50
 n_samples=100
 data_name='art2'
 
-model = BNN(x_train.shape[1], y_train.shape[1], hidden_dim=512, activate="relu", mask_type='dropout', prob=.5,
-                 lengthscale=10.)
+model = BNN(x_train.shape[1], 
+            y_train.shape[1], 
+            hidden_dim=512, 
+            activate="relu", 
+            mask_type='Dropout', 
+            prob=0.01
+            )
 
 output_dir = "data/{data_name}/{model}".format(**locals())
 # 画像の出力先作成
@@ -476,41 +406,37 @@ X, y = preprocess(x_train, y_train)
 
 N = X.shape[0]
 
-# Variable 型への変換
-X = Variable(preprocess_array_format(X))
-y = Variable(preprocess_array_format(y))
+X = preprocess_array_format(X)
+y = preprocess_array_format(y)
+# -
+
+model.compile(optimizer='adam', 
+              loss='mean_squared_error', 
+              metrics=['mean_squared_error'])
+
+from sklearn.metrics import mean_squared_error
 
 # +
-optimizer = optimizers.Adam()
-optimizer.setup(model)
-optimizer.add_hook(WeightDecay(weight_decay))
 list_loss = []
 
-for e in range(1, n_epoch + 1):
-    perm = np.random.permutation(N)
-    for i in range(0, N, batch_size):
-        idx = perm[i: i + batch_size]
-        _x = X[idx]
-        _y = y[idx]
-        model.zerograds()
-        loss = F.mean_squared_error(model(_x, apply_input=apply_input), _y)
-        loss.backward()
-        optimizer.update()
+for e in range(n_epoch+1):
+    for x_batch, y_batch in get_batch(X, y, batch_size=batch_size, shuffle=True):
+        model.train_on_batch(x_batch, y_batch)
 
-    l = F.mean_squared_error(model(X, False, False), y).data
+    y_pred = model(X, False, True)  
+    l = mean_squared_error(y, y_pred)
+    
     if e % freq_print_loss == 0:
         print("epoch: {e}\tloss:{l}".format(**locals()))
-
+    
     if e % freq_plot == 0:
-        fig, ax = plot_posterior(x_test, X.data, y.data, n_samples=n_samples)
+        fig, ax = plot_posterior(x_test, X, y, n_samples=n_samples)
         ax.set_title("epoch:{0:04d}".format(e))
         fig.tight_layout()
         file_path = os.path.join(output_dir, "epoch={e:04d}.png".format(**locals()))
         fig.savefig(file_path, dpi=150)
         plt.close("all")
     list_loss.append([e, l])
-
-save_logloss(list_loss, model.__str__())
 
 # +
 from glob import glob
@@ -522,8 +448,13 @@ def make_anime(files, name='anime'):
     images[0].save(name+'.gif', save_all=True, \
         append_images=images[1:], optimize=True, duration=10 , loop=0)
 
-l1_images = glob(os.path.join('./data/art2/hidden=512_activate=relu_maskname=dropout_prob=0.5',  "*.png"))
+l1_images = glob(os.path.join('./data/art2/hidden=512_activate=relu_Dropout',  "*.png"))
 make_anime(l1_images, 'anime')
 # -
+
+# keras version
+# <img src='./anime-keras.gif' width=400>
+# -
+# chainer version
 
 # <img src='./anime.gif' width=400></img>
