@@ -12,7 +12,7 @@
 #     name: python3
 # ---
 
-# ! pip install tensorflow
+# ! pip install chainer==1.24.0
 
 from sklearn.preprocessing import StandardScaler
 import numpy as np
@@ -21,6 +21,7 @@ import matplotlib.pyplot as plt
 
 
 # ## get data
+
 
 class ArtificialData(object):
     """
@@ -101,99 +102,24 @@ from tensorflow.keras.layers import Dense, Activation, Dropout, GaussianDropout
 from tensorflow.keras.initializers import RandomNormal
 
 
-# +
-class BNN(keras.Model):
-    def __init__(self, 
-                 input_dim: int, 
-                 output_dim: int, 
-                 hidden_dim: int, 
-                 activate: str = 'relu', 
-                 mask_type: str='gaussian', 
-                 prob: float=0.5, 
-                 lengthscale: float=10.):
-        super(BNN, self).__init__(name='bnn')
-        self.input_dim = input_dim
-        self.output_dim = output_dim
-        self.hidden_dim = hidden_dim
-        self.activation = activate
-        self.mask_type = mask_type
-        self.prob = prob
-        self.lengthscale = lengthscale
-        self.dense_1 = Dense(input_dim, 
-                             activation=activate, 
-                             bias_initializer=RandomNormal(mean=1/lengthscale, stddev=1),
-                             kernel_initializer=RandomNormal(mean=1/lengthscale, stddev=1)
-                             )
-        self.dense_2 = Dense(hidden_dim, 
-                             activation=activate, 
-                             bias_initializer=RandomNormal(mean=1/lengthscale, stddev=1),
-                             kernel_initializer=RandomNormal(mean=1/lengthscale, stddev=1)
-                             )
-        self.dense_3 = Dense(hidden_dim, 
-                             activation=activate, 
-                             bias_initializer=RandomNormal(mean=1/lengthscale, stddev=1),
-                             kernel_initializer=RandomNormal(mean=1/lengthscale, stddev=1)
-                             )
-        self.dense_4 = Dense(output_dim, 
-                             bias_initializer=RandomNormal(mean=1/lengthscale, stddev=1),
-                             kernel_initializer=RandomNormal(mean=1/lengthscale, stddev=1)
-                             )
-        self.mask_1 = eval(mask_type)(prob)
-        self.mask_2 = eval(mask_type)(prob)
-        self.mask_3 = eval(mask_type)(prob)
-    
-    def __call__(self, inputs, apply_input=False, apply_hidden=True, training=False):
-        if apply_input:
-            inputs = self.mask_1(inputs, training=apply_input)
-        x = self.dense_1(inputs)
-        
-        if apply_hidden:
-            x = self.mask_2(x, training=apply_hidden)
-        x = self.dense_2(x)
-        
-        if apply_hidden:
-            x = self.mask_3(x, training=apply_hidden)
-        x = self.dense_3(x)
-        
-        x = self.dense_4(x)
-        
-        return x        
+def build_model(input_dim, hidden_dim, p, activate="relu", mask="Dropout", apply_input=False, apply_hidden=True):
+    inputs = keras.Input(shape=input_dim)
+    inputs = eval(mask)(p)(inputs, training=apply_input)
+    x = Dense(hidden_dim, activation="relu")(inputs)
+    x = eval(mask)(p)(x, training=apply_hidden)
+    x = keras.layers.Dense(hidden_dim, activation="relu")(x)
+    x = eval(mask)(p)(x, training=apply_hidden)
+    x = Dense(hidden_dim, activation="relu")(x)
+    outputs = Dense(1)(x)
 
-    def __str__(self):
-        """
-        ネットワークの条件をいい感じの文字列で表現する
-        :return: ネットワーク条件の文字
-        :rtype: str
-        """
-        s = "hidden={0.hidden_dim}_activate={0.activation}_{0.mask_type}".format(self)
-        return s
+    model = keras.Model(inputs, outputs)
 
-def get_batch(x, y, batch_size, shuffle=False):
-    '''ミニバッチを生成するジェネレーター関数
-    '''
-    num_samples = len(x)  # サンプル数
-    if shuffle:  # シャッフルする場合
-        indices = np.random.permutation(num_samples)
-        # 例: num_samples=10 の場合、array([7, 8, 1, 2, 4, 6, 9, 5, 3, 0])
-        # ランダムにシャッフルされている
-    else:  # シャッフルしない場合
-        indices = np.arange(num_samples)
-        # 例: num_samples=10 の場合、array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
-        
-    num_steps = np.ceil(num_samples / batch_size).astype(int)
-    # ステップ数 = ceil(サンプル数 / バッチサイズ)
-    # 例 np.ceil(10 / 3) = np.ceil(3.33333333...) = 4
-    
-    for itr in range(num_steps):
-        start = batch_size * itr
-        excerpt = indices[start:start + batch_size]
-        # [batch_size * itr, batch_size * (itr + 1)] の範囲のサンプルを yield で返す。
-        yield x[excerpt], y[excerpt]
+    model.compile(optimizer="adam", loss="mean_squared_error", metrics=["mean_squared_error"])
+    return model
 
-
-# -
 
 # ## Bayes Part
+
 
 class Transformer(object):
     """
@@ -336,8 +262,6 @@ def plot_posterior(x_test, x_train=None, y_train=None, n_samples=100):
 
     predict_mean = predict_values.mean(axis=0)
     predict_var = predict_values.var(axis=0)
-    tau = (1. - model.prob) * model.lengthscale ** 2. / (2 * len(x_train) * weight_decay)
-    predict_var += tau ** -1
 
     fig = plt.figure(figsize=(6, 6))
     ax1 = fig.add_subplot(111)
@@ -368,7 +292,7 @@ def posterior(x, n=3):
     """
     x = preprocess_array_format(x)
     x = preprocess(x)
-    pred = [model(x, False, True).numpy().reshape(-1) for _ in range(n)]
+    pred = [model(x).numpy().reshape(-1) for _ in range(n)]
     pred = inverse_y_transform(pred)
     pred = np.array(pred)
     return pred
@@ -376,24 +300,17 @@ def posterior(x, n=3):
 
 # -
 
-weight_decay = 4 * 10 ** -5
 apply_input = False
-n_epoch=10000
-batch_size=20
+n_epoch = 1000
+batch_size = 50
 freq_print_loss=10
 freq_plot=50
 n_samples=100
 data_name='art2'
 
-model = BNN(x_train.shape[1], 
-            y_train.shape[1], 
-            hidden_dim=512, 
-            activate="relu", 
-            mask_type='Dropout', 
-            prob=0.01
-            )
+model = build_model(x_train.shape[1], 512, 0.5, apply_input=apply_input)
 
-output_dir = "data/{data_name}/{model}".format(**locals())
+output_dir = "data/{data_name}/".format(**locals())
 # 画像の出力先作成
 if os.path.exists(output_dir) is False:
     os.makedirs(output_dir)
@@ -406,24 +323,25 @@ X, y = preprocess(x_train, y_train)
 
 N = X.shape[0]
 
-X = preprocess_array_format(X)
-y = preprocess_array_format(y)
-# -
-
 model.compile(optimizer='adam', 
               loss='mean_squared_error', 
               metrics=['mean_squared_error'])
 
 from sklearn.metrics import mean_squared_error
 
+
 # +
 list_loss = []
 
 for e in range(n_epoch+1):
-    for x_batch, y_batch in get_batch(X, y, batch_size=batch_size, shuffle=True):
-        model.train_on_batch(x_batch, y_batch)
+    perm = np.random.permutation(N)
+    for i in range(0, N, batch_size):
+        idx = perm[i : i + batch_size]
+        _x = X[idx]
+        _y = y[idx]
+        model.train_on_batch(_x, _y)
 
-    y_pred = model(X, False, True)  
+    y_pred = model(X)
     l = mean_squared_error(y, y_pred)
     
     if e % freq_print_loss == 0:
@@ -438,6 +356,8 @@ for e in range(n_epoch+1):
         plt.close("all")
     list_loss.append([e, l])
 
+save_logloss(list_loss, model.__str__())
+
 # +
 from glob import glob
 import os
@@ -448,8 +368,8 @@ def make_anime(files, name='anime'):
     images[0].save(name+'.gif', save_all=True, \
         append_images=images[1:], optimize=True, duration=10 , loop=0)
 
-l1_images = glob(os.path.join('./data/art2/hidden=512_activate=relu_Dropout',  "*.png"))
-make_anime(l1_images, 'anime')
+l1_images = glob(os.path.join('./data/art2/',  "*.png"))
+make_anime(l1_images, 'anime-keras')
 # -
 
 # keras version
