@@ -12,7 +12,7 @@
 #     name: python3
 # ---
 
-# ! pip install chainer==1.24.0
+# ! pip install tensorflow
 
 from sklearn.preprocessing import StandardScaler
 import numpy as np
