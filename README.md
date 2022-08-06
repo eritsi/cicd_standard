@@ -7,6 +7,12 @@ rm -rf .git
 git init
 git remote add origin {New Repository}
 ```
+マージ済みのコミット取り消しコマンドもついでに備忘録  
+```
+git reset --hard <戻りたいコミットのハッシュ>
+git push -f origin main
+```  
+この時、間のコミットで変化したファイルがGitPod上でもリセットされるので、実行前に維持したい変更部位をクリップボードに入れておくこと
 
 ## Activate github actions in the new repository
 - Settings -> Actions -> Allow all actions
