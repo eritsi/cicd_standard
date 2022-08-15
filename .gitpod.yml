@@ -18,6 +18,10 @@ tasks:
       date -d "2020/1/1 1:23" +%s
       # bq cp --project_id=<prj> --location='asia-northeast1' <dataset>.<table>@1585767600000
       # bq show --project_id=<prj> --schema --format=prettyjson <dataset>.<table> > schema.json
+      # BQコマンドでプロジェクト超えたコピー
+      # bq cp sushi:original.m_mst_store sandbox:sample.m_mst_store
+      # GCSのバケットをプロジェクト超えてコピー
+      # https://1e100.4watcher365.dev/google-cloud/google-cloud-platform/cloud-storage-transfer-another-project/
   - name: new shell
     init: |
       gp sync-await gc-sdk
