@@ -1,18 +1,17 @@
 tasks:
   - name: install google-cloud-sdk & gcloud configs
     init: |
-      curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-358.0.0-linux-x86_64.tar.gz
-      tar -xvf google-cloud-sdk-358.0.0-linux-x86_64.tar.gz
+      curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-393.0.0-linux-x86_64.tar.gz
+      tar -xvf google-cloud-cli-393.0.0-linux-x86_64.tar.gz
       ./google-cloud-sdk/install.sh
-      rm google-cloud-sdk-358.0.0-linux-x86_64.tar.gz
+      rm google-cloud-cli-393.0.0-linux-x86_64.tar.gz
       pip install google-cloud-bigquery
       pip install pandas
       pip install pyarrow
-      source ~/.bashrc
-      gcloud auth login
+      source ~/.bashrc # exec bash
+      gcloud auth login --no-launch-browser
       read -p "Enter Your GCP Project ID: " GCP_ID
-      gcloud config set project $GCP_ID
-      gcloud auth application-default login
+      gcloud auth application-default login --no-launch-browser
       gp sync-done gc-sdk
     command: |
       date -d "2020/1/1 1:23" +%s
