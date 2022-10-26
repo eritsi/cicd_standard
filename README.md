@@ -32,3 +32,54 @@ git push -f origin main
      
 ### autopep8 linter : GitHub Action
      https://github.com/marketplace/actions/autopep8#automated-pull-requests
+
+
+### GCS系のコードメモ。そのうちutilsに入れる
+```
+! pip install google-cloud-storage
+
+from google.cloud import storage
+from google.oauth2 import service_account
+import os
+import json
+from pprint import pprint
+
+# key_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'test-gcs.json')
+# service_account_info = json.load(open(key_path))
+# credentials = service_account.Credentials.from_service_account_info(service_account_info)
+client = storage.Client(
+    project='inz-dash-dev'
+)
+
+# get list
+buckets = client.list_buckets()
+for obj in buckets:
+    print('-------->')
+    pprint(vars(obj))
+    # get
+    bucket = client.get_bucket(obj.id)
+    print('\t-------->')
+    pprint(vars(bucket))
+
+import pandas as pd
+from io import BytesIO
+
+bucket_name = 'inz-dash-bucket'
+blob_name = 'picking_raw_data_predict/20220915/0900-upload-estimation-csv-062745.csv'
+bucket = client.get_bucket(bucket_name)
+blob = bucket.blob(blob_name)
+
+content = blob.download_as_string()
+
+# print("read: [{}]".format(content.decode('utf-8')))
+test = pd.read_csv(BytesIO(content))
+test.head()
+
+import chardet
+
+
+filepath = "集品【生産性分析用】0916-0923_1800.csv"
+with open(filepath, 'rb') as f:
+    c = f.read()
+    result = chardet.detect(c)
+```
