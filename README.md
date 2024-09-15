@@ -12,7 +12,18 @@ git remote add origin {New Repository}
 git reset --hard <戻りたいコミットのハッシュ>
 git push -f origin main
 ```  
-この時、間のコミットで変化したファイルがGitPod上でもリセットされるので、実行前に維持したい変更部位をクリップボードに入れておくこと
+この時、間のコミットで変化したファイルがGitPod上でもリセットされるので、実行前に維持したい変更部位をクリップボードに入れておくこと  
+
+コミット・タグを指定してその時点でのツリーだけをgit cloneしてくる  
+[参考](https://yo.eki.do/notes/git-only-single-commit/)
+```
+mkdir foo
+cd foo
+git init
+git remote add origin <cloneする元のURL>
+git fetch --depth 1 origin <コミットを指定するSHA1ハッシュやタグ名>
+git reset --hard FETCH_HEAD
+```
 
 ## Activate github actions in the new repository
 - Settings -> Actions -> Allow all actions
