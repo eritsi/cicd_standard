@@ -15,13 +15,13 @@
 
 # ! pip install boxsdk
 
+import box
 import sys
 sys.path.append('./utils/')
-import box
 
 project_id = ''
 dataset_id = ''
-AccessToken = '' 
+AccessToken = ''
 client_id = ''
 client_secret = ''
 
@@ -234,11 +234,16 @@ uke_cols = [
     'item_count',
     'unit',
     'currency',
-    'drawing_code'    
+    'drawing_code'
 ]
 
 
-def read_folder_uke_2019(_client, _folder_id, _project_id, _dataset_id, eng_cols):
+def read_folder_uke_2019(
+        _client,
+        _folder_id,
+        _project_id,
+        _dataset_id,
+        eng_cols):
     items = _client.folder(_folder_id).get_items()
     _file_ids = []
     for item in items:
@@ -251,8 +256,12 @@ def read_folder_uke_2019(_client, _folder_id, _project_id, _dataset_id, eng_cols
             table_name = _dataset_id + ".ukeharai_" + \
                 box.get_filename(_client, item.id)[3:11]
         print(table_name)
-        data[0].set_axis(eng_cols, axis=1).to_gbq(
-            destination_table=table_name, project_id=_project_id, if_exists='replace')
+        data[0].set_axis(
+            eng_cols,
+            axis=1).to_gbq(
+            destination_table=table_name,
+            project_id=_project_id,
+            if_exists='replace')
         print('{0} {1} is loaded to BQ as "{2}"'.format(
             item.type.capitalize(), item.id, table_name))
 
@@ -264,14 +273,14 @@ read_folder_uke_2019(
     dataset_id,
     uke_cols)
 
-read_folder_uke_2019( # 2020年度は全部四半期ごとのファイル
+read_folder_uke_2019(  # 2020年度は全部四半期ごとのファイル
     client,
     '155499720630',
     project_id,
     dataset_id,
     uke_cols)
 
-read_folder_uke_2019( # 2021年度は全部四半期ごとのファイル
+read_folder_uke_2019(  # 2021年度は全部四半期ごとのファイル
     client,
     '155426576781',
     project_id,

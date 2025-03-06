@@ -14,6 +14,12 @@
 
 # ! pip install tensorflow
 
+from PIL import Image
+from glob import glob
+from sklearn.metrics import mean_squared_error
+from tensorflow.keras.initializers import RandomNormal
+from tensorflow.keras.layers import Dense, Activation, Dropout, GaussianDropout
+from tensorflow import keras
 from sklearn.preprocessing import StandardScaler
 import numpy as np
 import os
@@ -42,7 +48,8 @@ class ArtificialData(object):
         raise NotImplementedError
 
     def make_x(self):
-        return np.sort(np.random.uniform(-1.5, 1.5, size=self.n_samples)).astype(np.float32).reshape(-1, 1)
+        return np.sort(np.random.uniform(-1.5, 1.5, size=self.n_samples)
+                       ).astype(np.float32).reshape(-1, 1)
 
     def make_noise(self, x):
         return np.random.normal(loc=0, scale=self.noise_scale, size=x.shape)
@@ -78,10 +85,10 @@ class Art2(ArtificialData):
 def make_data(size, seed=1):
     """
     人工データの作成
-    
-    :param int size: 
+
+    :param int size:
     :param str function_type:
-    :param int seed: 
+    :param int seed:
     :return: データと正しい関数の集合
     :rtype: tuple[np.array, np.array, function]
     """
@@ -97,12 +104,15 @@ plt.scatter(x_train, y_train)
 
 # ## Linear Deep Learning via Chainer
 
-from tensorflow import keras
-from tensorflow.keras.layers import Dense, Activation, Dropout, GaussianDropout
-from tensorflow.keras.initializers import RandomNormal
 
-
-def build_model(input_dim, hidden_dim, p, activate="relu", mask="Dropout", apply_input=False, apply_hidden=True):
+def build_model(
+        input_dim,
+        hidden_dim,
+        p,
+        activate="relu",
+        mask="Dropout",
+        apply_input=False,
+        apply_hidden=True):
     inputs = keras.Input(shape=input_dim)
     inputs = eval(mask)(p)(inputs, training=apply_input)
     x = Dense(hidden_dim, activation="relu")(inputs)
@@ -114,7 +124,10 @@ def build_model(input_dim, hidden_dim, p, activate="relu", mask="Dropout", apply
 
     model = keras.Model(inputs, outputs)
 
-    model.compile(optimizer="adam", loss="mean_squared_error", metrics=["mean_squared_error"])
+    model.compile(
+        optimizer="adam",
+        loss="mean_squared_error",
+        metrics=["mean_squared_error"])
     return model
 
 
@@ -131,8 +144,8 @@ class Transformer(object):
     def __init__(self, scaling=False):
         """
         コンストラクタ
-        :param bool transform_log: 目的変数をログ変換するかのbool. 
-        :param bool scaling: 
+        :param bool transform_log: 目的変数をログ変換するかのbool.
+        :param bool scaling:
         """
         self._is_fitted = False
         self.scaling = scaling
@@ -143,7 +156,7 @@ class Transformer(object):
         """
 
         :param np.ndarray x: 変換する変数配列
-        :return: 
+        :return:
         :rtype: np.ndarray
         """
         shape = x.shape
@@ -219,13 +232,15 @@ def preprocess(X, y=None):
     y_transformed = y_transformer.transform(y)
     return x_transformed, y_transformed
 
+
 def inverse_y_transform(y):
     """
     予測値の逆変換
-    :param y: 
-    :return: 
+    :param y:
+    :return:
     """
     return y_transformer.inverse_transform(y)
+
 
 def preprocess_array_format(x):
     """
@@ -257,7 +272,8 @@ def preprocess_array_format(x):
 def plot_posterior(x_test, x_train=None, y_train=None, n_samples=100):
     xx = np.linspace(-2.5, 2.5, 200).reshape(-1, 1)
 
-    x_train, y_train = x_transformer.inverse_transform(x_train), inverse_y_transform(y_train)
+    x_train, y_train = x_transformer.inverse_transform(
+        x_train), inverse_y_transform(y_train)
     predict_values = posterior(xx, n=n_samples)
 
     predict_mean = predict_values.mean(axis=0)
@@ -265,28 +281,32 @@ def plot_posterior(x_test, x_train=None, y_train=None, n_samples=100):
 
     fig = plt.figure(figsize=(6, 6))
     ax1 = fig.add_subplot(111)
-    ax1.plot(x_train[:, 0], y_train[:, 0], "o", markersize=6., color="C0", label="Training Data Points",
-             fillstyle="none")
+    ax1.plot(x_train[:, 0], y_train[:, 0], "o", markersize=6.,
+             color="C0", label="Training Data Points", fillstyle="none")
 
     for i in range(100):
         if i == 0:
-            ax1.plot(xx[:, 0], predict_values[i], color="C1", alpha=.1, label="Posterior Samples", linewidth=.5)
+            ax1.plot(xx[:, 0], predict_values[i], color="C1",
+                     alpha=.1, label="Posterior Samples", linewidth=.5)
         else:
-            ax1.plot(xx[:, 0], predict_values[i], color="C1", alpha=.1, linewidth=.5)
+            ax1.plot(xx[:, 0], predict_values[i],
+                     color="C1", alpha=.1, linewidth=.5)
 
     ax1.plot(xx[:, 0], predict_mean, "--", color="C1", label="Posterior Mean")
-    ax1.fill_between(xx[:, 0], predict_mean + predict_var, predict_mean - predict_var, color="C1",
-                     label="1 $\sigma$", alpha=.5)
+    ax1.fill_between(xx[:, 0], predict_mean +
+                     predict_var, predict_mean -
+                     predict_var, color="C1", label="1 $\sigma$", alpha=.5)
 
     ax1.set_ylim(-3.2, 3.2)
     ax1.set_xlim(min(xx), max(xx))
     ax1.legend(loc=4)
     return fig, ax1
 
+
 def posterior(x, n=3):
     """
     :param np.ndarray x:
-    :param int n: 
+    :param int n:
     :return:
     :rtype: np.ndarray
     """
@@ -303,10 +323,10 @@ def posterior(x, n=3):
 apply_input = False
 n_epoch = 1000
 batch_size = 50
-freq_print_loss=10
-freq_plot=50
-n_samples=100
-data_name='art2'
+freq_print_loss = 10
+freq_plot = 50
+n_samples = 100
+data_name = 'art2'
 
 model = build_model(x_train.shape[1], 512, 0.5, apply_input=apply_input)
 
@@ -323,35 +343,36 @@ X, y = preprocess(x_train, y_train)
 
 N = X.shape[0]
 
-model.compile(optimizer='adam', 
-              loss='mean_squared_error', 
+model.compile(optimizer='adam',
+              loss='mean_squared_error',
               metrics=['mean_squared_error'])
-
-from sklearn.metrics import mean_squared_error
 
 
 # +
 list_loss = []
 
-for e in range(n_epoch+1):
+for e in range(n_epoch + 1):
     perm = np.random.permutation(N)
     for i in range(0, N, batch_size):
-        idx = perm[i : i + batch_size]
+        idx = perm[i: i + batch_size]
         _x = X[idx]
         _y = y[idx]
         model.train_on_batch(_x, _y)
 
     y_pred = model(X)
     l = mean_squared_error(y, y_pred)
-    
+
     if e % freq_print_loss == 0:
         print("epoch: {e}\tloss:{l}".format(**locals()))
-    
+
     if e % freq_plot == 0:
         fig, ax = plot_posterior(x_test, X, y, n_samples=n_samples)
         ax.set_title("epoch:{0:04d}".format(e))
         fig.tight_layout()
-        file_path = os.path.join(output_dir, "epoch={e:04d}.png".format(**locals()))
+        file_path = os.path.join(
+            output_dir,
+            "epoch={e:04d}.png".format(
+                **locals()))
         fig.savefig(file_path, dpi=150)
         plt.close("all")
     list_loss.append([e, l])
@@ -359,16 +380,19 @@ for e in range(n_epoch+1):
 save_logloss(list_loss, model.__str__())
 
 # +
-from glob import glob
-import os
-from PIL import Image
+
 
 def make_anime(files, name='anime'):
-    images = list(map(lambda file : Image.open(file) , files))
-    images[0].save(name+'.gif', save_all=True, \
-        append_images=images[1:], optimize=True, duration=10 , loop=0)
+    images = list(map(lambda file: Image.open(file), files))
+    images[0].save(name + '.gif',
+                   save_all=True,
+                   append_images=images[1:],
+                   optimize=True,
+                   duration=10,
+                   loop=0)
 
-l1_images = glob(os.path.join('./data/art2/',  "*.png"))
+
+l1_images = glob(os.path.join('./data/art2/', "*.png"))
 make_anime(l1_images, 'anime-keras')
 # -
 
